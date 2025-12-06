@@ -220,20 +220,23 @@ function App() {
   }, [renderCanvas]);
 
 
-  // --- Event Handlers ---
+  // --- Event Handlers (Pointer Events for Mouse/Touch/Pen) ---
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+
     const pt = { x: e.clientX, y: e.clientY };
     const worldPt = screenToWorld(pt, camera);
 
-    // Right click or Space+Click or Pan Tool = Pan
+    // Right click (2) or Middle click (1) or Pan Tool = Pan
     if (e.button === 1 || e.button === 2 || (e.button === 0 && tool === ToolType.PAN)) {
         setIsDragging(true);
         dragStartRef.current = pt;
         return;
     }
     
-    // Normal Tools
+    // Normal Tools (Left Click)
     if (e.button === 0) {
         if ([ToolType.ARRAY, ToolType.TABLE, ToolType.CODE, ToolType.TEXT, ToolType.LINKED_LIST].includes(tool)) {
             // Immediate placement tools
@@ -247,7 +250,8 @@ function App() {
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
+    e.preventDefault();
     const pt = { x: e.clientX, y: e.clientY };
     const worldPt = screenToWorld(pt, camera);
 
@@ -261,11 +265,14 @@ function App() {
 
     if (isDrawingRef.current) {
         currentPathRef.current.push(worldPt);
-        renderCanvas(); // Force re-render for preview
+        renderCanvas(); 
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.currentTarget.releasePointerCapture(e.pointerId);
+
     if (isDragging) {
         setIsDragging(false);
         dragStartRef.current = null;
@@ -593,13 +600,14 @@ function App() {
       {/* Canvas Layer */}
       <canvas
         ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
         onWheel={handleWheel}
         onContextMenu={(e) => e.preventDefault()}
         className={`absolute inset-0 z-10 ${tool === ToolType.PAN ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'}`}
+        style={{ touchAction: 'none' }}
       />
 
       {/* DOM Widget Layer */}
